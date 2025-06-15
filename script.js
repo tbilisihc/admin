@@ -1,11 +1,12 @@
 const form = document.getElementById("admin-form");
 	if (form) {
 		form.addEventListener("submit", function (event) {
+			console.log("Button clicked")
 			event.preventDefault();
 			const passwordInput = document.getElementById("password") 
 			const password = passwordInput.value ? passwordInput.value : "";
 			const contents = document.getElementById("message").value ? document.getElementById("message").value : "";
-			const vercelWebhookUrl = 'bot-api-tbilisihc.vercel.app/api/handler';
+			const vercelWebhookUrl = 'https://bot-api-tbilisihc.vercel.app/api/handler';
 			async function sendPOST(message, password) {
 				try {
 					const response = await fetch(vercelWebhookUrl, {
@@ -34,5 +35,5 @@ const form = document.getElementById("admin-form");
 			}
 			sendPOST(contents, password);
 			alert('Sending...')
-			location.href="/"
+			// location.href="/"
 		});}

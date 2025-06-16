@@ -1,76 +1,98 @@
-// This script handles the form submission for uploading an image and password
-// from the HTML page to the Go backend.
 
-// --- Configuration ---
-// Replace with your Vercel deployment URL
-const backendUrl = 'https://bot-api-tbilisihc.vercel.app/api/handler';
+const baseUrl = 'https://bot-api-tbilisihc.vercel.app';
 
-// --- Get Form Elements ---
+// --- Get Form and Input Elements from the HTML ---
 const adminForm = document.getElementById('admin-form');
 const passwordInput = document.getElementById('password');
 const fileInput = document.getElementById('myFile');
-const messageTextarea = document.getElementById('message'); // Note: The Go backend doesn't process this yet.
+const messageTextarea = document.getElementById('message');
 
-// --- Add Event Listener for Form Submission ---
+// --- Add an Event Listener for the Form's 'submit' event ---
 adminForm.addEventListener('submit', async (event) => {
-  // Prevent the default browser action of reloading the page on form submission.
+  // This prevents the browser from reloading the page, allowing our script to handle the submission.
   event.preventDefault();
 
-  // --- 1. Get User Input ---
+  // --- 1. Get the current values from the form inputs ---
   const password = passwordInput.value;
-  const imageFile = fileInput.files[0]; // Get the first file selected by the user.
+  const imageFile = fileInput.files[0]; // .files is a list; [0] gets the first (and only) file.
+  const message = messageTextarea.value;
 
-  // --- 2. Input Validation ---
+  // --- 2. Basic Input Validation ---
   if (!password) {
     alert('Please enter a password.');
-    return;
+    return; // Stop the function if validation fails.
   }
 
-  if (!imageFile) {
-    alert('Please select an image to upload.');
-    return;
+  // Check if BOTH the message and the image are missing.
+  if (!imageFile && !message) {
+    alert('Please either write a message or select an image to upload.');
+    return; // Stop the function.
   }
 
-  // --- 3. Create FormData ---
-  // FormData is the perfect tool for sending files and text in a single request.
-  const formData = new FormData();
+  let endpointUrl;
+  let requestBody;
+  const requestHeaders = {};
 
-  // Append the data. The keys ("password", "image") must match what the Go backend expects.
-  formData.append('password', password);
-  formData.append('image', imageFile);
-  formData.append('message', messageTextarea.value); 
+  // --- 3. THE CORE LOGIC: Check if an image file was selected ---
+  if (imageFile) {
+    // --- SCENARIO A: An image IS present ---
+    console.log('An image was selected. Preparing to upload file.');
 
-  console.log('Sending data to the backend...');
-  // You can also inspect the FormData object like this:
-  // for (let [key, value] of formData.entries()) {
-  //   console.log(key, value);
-  // }
+    // Set the URL for the image-handling endpoint.
+    endpointUrl = `${baseUrl}/api/handler`;
+
+    // Use FormData to package the file and password together.
+    const formData = new FormData();
+    formData.append('password', password);
+    formData.append('image', imageFile, imageFile.name);
+    formData.append('message', message);
+
+    requestBody = formData;
+
+  } else {
+    // --- SCENARIO B: The image input IS EMPTY ---
+    console.log('No image selected. Preparing to send text message as JSON.');
+
+    // Set the URL for the text-only endpoint.
+    endpointUrl = `${baseUrl}/api/no-image`;
+
+    // Create a plain JavaScript object for the payload.
+    const payload = {
+      password: password,
+      content: message,
+    };
+    
+    // Convert the JavaScript object into a JSON string.
+    requestBody = JSON.stringify(payload);
+    
+    // Explicitly set the header to tell the server we are sending JSON.
+    requestHeaders['Content-Type'] = 'application/json';
+  }
 
 
-  // --- 4. Send the request using the Fetch API ---
+  // --- 4. Send the data to the determined endpoint using the Fetch API ---
+  console.log(`Sending request to: ${endpointUrl}`);
   try {
-    const response = await fetch(backendUrl, {
+    const response = await fetch(endpointUrl, {
       method: 'POST',
-      body: formData, // When you pass a FormData object, the browser automatically sets the correct 'Content-Type: multipart/form-data' header.
+      headers: requestHeaders,
+      body: requestBody,
     });
 
-    // Get the JSON response from the server
-    const result = await response.json();
+    const result = await response.json(); // Parse the JSON response from the server.
 
     if (response.ok) {
-      // Server responded with a 2xx status code
-      console.log('✅ Success!');
-      alert(`Server says: ${result.message}`);
+      // The server responded with a success status (e.g., 200)
+      console.log('✅ Success!', result);
+      alert(`Server Response: ${result.message}`);
     } else {
-      // Server responded with an error status code (4xx, 5xx)
-      console.error('❌ Error from server:');
-      console.error(`Status: ${response.status}`);
-      console.error('Data:', result);
-      alert(`Error: ${result.message || 'An unknown error occurred.'}`);
+      // The server responded with an error status (e.g., 401, 500)
+      console.error('❌ Server Error:', result);
+      alert(`Error: ${result.message || 'An unknown server error occurred.'}`);
     }
   } catch (error) {
-    // This catches network errors or issues with the fetch request itself.
-    console.error('❌ Network or client-side error:', error);
-    alert('Failed to send request. Check the console for details.');
+    // This catches network failures or other errors that prevent the request from completing.
+    console.error('❌ Network or Client-Side Error:', error);
+    alert('A network error occurred. Please check your connection and the console for details.');
   }
 });

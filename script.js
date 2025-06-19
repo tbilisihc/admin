@@ -1,4 +1,3 @@
-
 const baseUrl = 'https://bot-api-tbilisihc.vercel.app';
 
 // --- Get Form and Input Elements from the HTML ---
@@ -6,6 +5,10 @@ const adminForm = document.getElementById('admin-form');
 const passwordInput = document.getElementById('password');
 const fileInput = document.getElementById('myFile');
 const messageTextarea = document.getElementById('message');
+const discordCheckbox = document.getElementById('discord');
+const twitterCheckbox = document.getElementById('twitter');
+const telegramCheckbox = document.getElementById('telegram');
+
 
 // --- Add an Event Listener for the Form's 'submit' event ---
 adminForm.addEventListener('submit', async (event) => {
@@ -16,6 +19,10 @@ adminForm.addEventListener('submit', async (event) => {
   const password = passwordInput.value;
   const imageFile = fileInput.files[0]; // .files is a list; [0] gets the first (and only) file.
   const message = messageTextarea.value;
+  // Get the boolean value from checkboxes and convert to a string "true" or "false"
+  const sendToDiscord = discordCheckbox.checked.toString();
+  const sendToTwitter = twitterCheckbox.checked.toString();
+  const sendToTelegram = telegramCheckbox.checked.toString();
 
   // --- 2. Basic Input Validation ---
   if (!password) {
@@ -46,6 +53,10 @@ adminForm.addEventListener('submit', async (event) => {
     formData.append('password', password);
     formData.append('image', imageFile, imageFile.name);
     formData.append('message', message);
+    formData.append('discord', JSON.stringify(sendToDiscord));
+    formData.append('twitter', JSON.stringify(sendToTwitter));
+    formData.append('telegram', JSON.stringify(sendToTelegram));
+
 
     requestBody = formData;
 
@@ -60,6 +71,9 @@ adminForm.addEventListener('submit', async (event) => {
     const payload = {
       password: password,
       content: message,
+      discord: sendToDiscord,
+      twitter: sendToTwitter,
+      telegram: sendToTelegram,
     };
     
     // Convert the JavaScript object into a JSON string.

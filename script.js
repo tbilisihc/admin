@@ -53,9 +53,9 @@ adminForm.addEventListener('submit', async (event) => {
     formData.append('password', password);
     formData.append('image', imageFile, imageFile.name);
     formData.append('message', message);
-    formData.append('discord', JSON.stringify(sendToDiscord));
-    formData.append('twitter', JSON.stringify(sendToTwitter));
-    formData.append('telegram', JSON.stringify(sendToTelegram));
+    formData.append('discord', sendToDiscord);
+    formData.append('twitter', sendToTwitter);
+    formData.append('telegram', sendToTelegram);
 
 
     requestBody = formData;

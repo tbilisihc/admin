@@ -71,9 +71,9 @@ adminForm.addEventListener('submit', async (event) => {
     const payload = {
       password: password,
       content: message,
-      discord: sendToDiscord,
-      twitter: sendToTwitter,
-      telegram: sendToTelegram,
+      discord: sendToDiscord.toString(),
+      twitter: sendToTwitter.toString(),
+      telegram: sendToTelegram.toString(),
     };
     
     // Convert the JavaScript object into a JSON string.

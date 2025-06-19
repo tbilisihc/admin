@@ -20,9 +20,9 @@ adminForm.addEventListener('submit', async (event) => {
   const imageFile = fileInput.files[0]; // .files is a list; [0] gets the first (and only) file.
   const message = messageTextarea.value;
   // Get the boolean value from checkboxes and convert to a string "true" or "false"
-  const sendToDiscord = discordCheckbox.checked.toString();
-  const sendToTwitter = twitterCheckbox.checked.toString();
-  const sendToTelegram = telegramCheckbox.checked.toString();
+  const sendToDiscord = discordCheckbox.checked;
+  const sendToTwitter = twitterCheckbox.checked;
+  const sendToTelegram = telegramCheckbox.checked;
 
   // --- 2. Basic Input Validation ---
   if (!password) {

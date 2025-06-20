@@ -9,104 +9,105 @@ const discordCheckbox = document.getElementById('discord');
 const twitterCheckbox = document.getElementById('twitter');
 const telegramCheckbox = document.getElementById('telegram');
 
+// --- Get UI Elements for Feedback ---
+const loader = document.getElementById('loader');
+const messageContainer = document.getElementById('message-container');
+const messageContent = document.getElementById('message-content');
+
+
+// --- Helper functions for UI feedback ---
+const showLoader = () => loader.classList.remove('hidden');
+const hideLoader = () => loader.classList.add('hidden');
+
+const showMessage = (message, isError = false) => {
+    messageContent.textContent = message;
+    messageContent.className = `w-full rounded-lg p-4 text-center text-white ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+    messageContainer.classList.remove('hidden');
+};
+
+const hideMessage = () => {
+    messageContainer.classList.add('hidden');
+};
 
 // --- Add an Event Listener for the Form's 'submit' event ---
 adminForm.addEventListener('submit', async (event) => {
-  // This prevents the browser from reloading the page, allowing our script to handle the submission.
-  event.preventDefault();
+    event.preventDefault(); // Prevent default form submission
+    hideMessage(); // Hide any previous messages
+    showLoader(); // Show the loading spinner
 
-  // --- 1. Get the current values from the form inputs ---
-  const password = passwordInput.value;
-  const imageFile = fileInput.files[0]; // .files is a list; [0] gets the first (and only) file.
-  const message = messageTextarea.value;
-  // Get the boolean value from checkboxes and convert to a string "true" or "false"
-  const sendToDiscord = discordCheckbox.checked;
-  const sendToTwitter = twitterCheckbox.checked;
-  const sendToTelegram = telegramCheckbox.checked;
+    // --- 1. Get the current values from the form inputs ---
+    const password = passwordInput.value;
+    const imageFile = fileInput.files[0];
+    const message = messageTextarea.value;
+    const sendToDiscord = discordCheckbox.checked;
+    const sendToTwitter = twitterCheckbox.checked;
+    const sendToTelegram = telegramCheckbox.checked;
 
-  // --- 2. Basic Input Validation ---
-  if (!password) {
-    alert('Please enter a password.');
-    return; // Stop the function if validation fails.
-  }
-
-  // Check if BOTH the message and the image are missing.
-  if (!imageFile && !message) {
-    alert('Please either write a message or select an image to upload.');
-    return; // Stop the function.
-  }
-
-  let endpointUrl;
-  let requestBody;
-  const requestHeaders = {};
-
-  // --- 3. THE CORE LOGIC: Check if an image file was selected ---
-  if (imageFile) {
-    // --- SCENARIO A: An image IS present ---
-    console.log('An image was selected. Preparing to upload file.');
-
-    // Set the URL for the image-handling endpoint.
-    endpointUrl = `${baseUrl}/api/handler`;
-
-    // Use FormData to package the file and password together.
-    const formData = new FormData();
-    formData.append('password', password);
-    formData.append('image', imageFile, imageFile.name);
-    formData.append('message', message);
-    formData.append('discord', sendToDiscord);
-    formData.append('twitter', sendToTwitter);
-    formData.append('telegram', sendToTelegram);
-
-
-    requestBody = formData;
-
-  } else {
-    // --- SCENARIO B: The image input IS EMPTY ---
-    console.log('No image selected. Preparing to send text message as JSON.');
-
-    // Set the URL for the text-only endpoint.
-    endpointUrl = `${baseUrl}/api/no-image`;
-
-    // Create a plain JavaScript object for the payload.
-    const payload = {
-      password: password,
-      content: message,
-      discord: sendToDiscord.toString(),
-      twitter: sendToTwitter.toString(),
-      telegram: sendToTelegram.toString(),
-    };
-    
-    // Convert the JavaScript object into a JSON string.
-    requestBody = JSON.stringify(payload);
-    
-    // Explicitly set the header to tell the server we are sending JSON.
-    requestHeaders['Content-Type'] = 'application/json';
-  }
-
-
-  // --- 4. Send the data to the determined endpoint using the Fetch API ---
-  console.log(`Sending request to: ${endpointUrl}`);
-  try {
-    const response = await fetch(endpointUrl, {
-      method: 'POST',
-      headers: requestHeaders,
-      body: requestBody,
-    });
-
-    const result = await response.json(); // Parse the JSON response from the server.
-
-    if (response.ok) {
-      // The server responded with a success status (e.g., 200)
-      console.log('✅ Success!', result);
-      alert(`Server Response: ${result.message}`);
-    } else {
-      // The server responded with an error status (e.g., 401, 500)
-      console.error('❌ Server Error:', result);
-      alert(`Error: ${result.message || 'An unknown server error occurred.'}`);
+    // --- 2. Basic Input Validation ---
+    if (!password) {
+        hideLoader();
+        showMessage('Please enter a password.', true);
+        return;
     }
-  } catch (error) {
-    // This catches network failures or other errors that prevent the request from completing.
-    console.error('❌ Network or Client-Side Error:', error);
-    alert('A network error occurred. Please check your connection and the console for details.');
-  }
+
+    if (!imageFile && !message) {
+        hideLoader();
+        showMessage('Please either write a message or select an image to upload.', true);
+        return;
+    }
+
+    let endpointUrl;
+    let requestBody;
+    const requestHeaders = {};
+
+    // --- 3. THE CORE LOGIC: Determine endpoint and prepare request body ---
+    if (imageFile) {
+        // SCENARIO A: An image IS present
+        endpointUrl = `${baseUrl}/api/handler`;
+        const formData = new FormData();
+        formData.append('password', password);
+        formData.append('image', imageFile, imageFile.name);
+        formData.append('message', message);
+        formData.append('discord', sendToDiscord);
+        formData.append('twitter', sendToTwitter);
+        formData.append('telegram', sendToTelegram);
+        requestBody = formData;
+    } else {
+        // SCENARIO B: The image input IS EMPTY
+        endpointUrl = `${baseUrl}/api/no-image`;
+        const payload = {
+            password: password,
+            content: message,
+            discord: sendToDiscord.toString(),
+            twitter: sendToTwitter.toString(),
+            telegram: sendToTelegram.toString(),
+        };
+        requestBody = JSON.stringify(payload);
+        requestHeaders['Content-Type'] = 'application/json';
+    }
+
+    // --- 4. Send the data to the determined endpoint ---
+    try {
+        const response = await fetch(endpointUrl, {
+            method: 'POST',
+            headers: requestHeaders,
+            body: requestBody,
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showMessage(`Success: ${result.message}`);
+            adminForm.reset(); // Clear the form on success
+        } else {
+            showMessage(`Error: ${result.message || 'An unknown server error occurred.'}`, true);
+        }
+    } catch (error) {
+        showMessage('A network error occurred. Please check your connection.', true);
+    } finally {
+        hideLoader(); // Hide the loader regardless of outcome
+    }
 });
+
+// Hide the message when the user starts typing again
+adminForm.addEventListener('input', hideMessage);
